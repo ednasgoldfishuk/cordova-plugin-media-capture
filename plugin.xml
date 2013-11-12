@@ -69,8 +69,6 @@ xmlns:android="http://schemas.android.com/apk/res/android"
         </config-file>
         <header-file src="src/ios/CDVCapture.h" />
         <source-file src="src/ios/CDVCapture.m" />
-        <header-file src="src/ios/OverlayView.h" />
-        <source-file src="src/ios/OverlayView.m" />
         <resource-file src="src/ios/CDVCapture.bundle" />
         
         <framework src="CoreGraphics.framework" />

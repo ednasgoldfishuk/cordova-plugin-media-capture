@@ -865,7 +865,7 @@
 }
 
 - (void) viewDidAppear:(BOOL)animated {
-    OverlayView *overlay = [[OverlayView alloc] initWithFrame:CGRectMake(0, 0, 320, 480)];
+    UIView *overlay = [[UIView alloc] initWithFrame:CGRectMake(0, 0, 320, 480)];
     
     // Create a new image picker instance:
     UIImagePickerController *picker = [[UIImagePickerController alloc] init];
