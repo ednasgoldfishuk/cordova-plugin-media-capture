@@ -45,23 +45,6 @@
     return UIAccessibilityTraitNone;
 }
 
-- (BOOL)prefersStatusBarHidden {
-    return YES;
-}
-    
-- (UIViewController*)childViewControllerForStatusBarHidden {
-    return nil;
-}
-    
-- (void)viewWillAppear:(BOOL)animated {
-    SEL sel = NSSelectorFromString(@"setNeedsStatusBarAppearanceUpdate");
-    if ([self respondsToSelector:sel]) {
-        [self performSelector:sel withObject:nil afterDelay:0];
-    }
-    
-    [super viewWillAppear:animated];
-}
-
 @end
 
 @implementation CDVCapture
@@ -105,11 +88,9 @@
 
         self.inUse = YES;
 
-        SEL selector = NSSelectorFromString(@"presentViewController:animated:completion:");
-        if ([self.viewController respondsToSelector:selector]) {
+        if ([self.viewController respondsToSelector:@selector(presentViewController:::)]) {
             [self.viewController presentViewController:navController animated:YES completion:nil];
         } else {
-            // deprecated as of iOS >= 6.0
             [self.viewController presentModalViewController:navController animated:YES];
         }
     }
@@ -158,11 +139,9 @@
         // CDVImagePicker specific property
         pickerController.callbackId = callbackId;
 
-        SEL selector = NSSelectorFromString(@"presentViewController:animated:completion:");
-        if ([self.viewController respondsToSelector:selector]) {
+        if ([self.viewController respondsToSelector:@selector(presentViewController:::)]) {
             [self.viewController presentViewController:pickerController animated:YES completion:nil];
         } else {
-            // deprecated as of iOS >= 6.0
             [self.viewController presentModalViewController:pickerController animated:YES];
         }
     }
@@ -216,8 +195,115 @@
     return result;
 }
 
+- (void)animateBlinker
+{
+    [UIView animateWithDuration:0.5
+                          delay:0.0
+                        options: UIViewAnimationOptionCurveEaseInOut | UIViewAnimationOptionRepeat | UIViewAnimationOptionAutoreverse
+                     animations:^{
+                         [self.imageBlinkView setAlpha:0.2f];
+                         
+                     }
+                     completion:^(BOOL finished){
+
+                     }];
+    
+}
+
+- (void)startCapture:(id)sender {
+    
+    if (self.stopWatchTimer == nil)
+    {
+        [pickerController startVideoCapture];
+        //timer functionality
+        self.startDate = [NSDate date];
+        // Create the stop watch timer that fires every 100 ms
+        self.stopWatchTimer = [NSTimer scheduledTimerWithTimeInterval:1.0/10.0
+                                                               target:self
+                                                             selector:@selector(updateTimer)
+                                                             userInfo:nil
+                                                              repeats:YES];
+        [self animateBlinker];
+    }
+    else
+    {
+        [self.stopWatchTimer invalidate];
+        self.stopWatchTimer = nil;
+        [pickerController stopVideoCapture];
+        //self.stopwatchLabel.text = @"00:00";
+    }
+}
+
+- (void)stopCapture:(id)sender {
+    //[pickerController startVideoCapture];
+}
+
+- (void)cancelCapture:(id)sender {
+    [self.stopWatchTimer invalidate];
+    self.stopWatchTimer = nil;
+    
+    [pickerController dismissViewControllerAnimated:YES completion:NULL];
+}
+
+- (void)flashOnCapture:(id)sender {
+    if (pickerController.cameraFlashMode == UIImagePickerControllerCameraFlashModeOn)
+    {
+        pickerController.cameraFlashMode = UIImagePickerControllerCameraFlashModeOff;
+    }
+    else
+    {
+        pickerController.cameraFlashMode = UIImagePickerControllerCameraFlashModeOn;
+    }
+}
+
+- (void)flashOffCapture:(id)sender {
+    pickerController.cameraFlashMode = UIImagePickerControllerCameraFlashModeOff;
+}
+
+- (void)switchCameraCapture:(id)sender {
+    if (pickerController.cameraDevice == UIImagePickerControllerCameraDeviceFront)
+    {
+        pickerController.cameraDevice = UIImagePickerControllerCameraDeviceRear;
+    }
+    else
+    {
+        pickerController.cameraDevice = UIImagePickerControllerCameraDeviceFront;
+    }
+}
+
+-(void)gotoLibrary:(id)sender
+{
+    [self.stopWatchTimer invalidate];
+    self.stopWatchTimer = nil;
+    
+    [pickerController setSourceType:UIImagePickerControllerSourceTypeSavedPhotosAlbum];
+    
+}
+
+- (void)updateTimer
+{
+    // Create date from the elapsed time
+    NSDate *currentDate = [NSDate date];
+    NSTimeInterval timeInterval = [currentDate timeIntervalSinceDate:self.startDate];
+    NSDate *timerDate = [NSDate dateWithTimeIntervalSince1970:timeInterval];
+    
+    // Create a date formatter
+    NSDateFormatter *dateFormatter = [[NSDateFormatter alloc] init];
+    [dateFormatter setDateFormat:@"mm:ss"];
+    [dateFormatter setTimeZone:[NSTimeZone timeZoneForSecondsFromGMT:0.0]];
+    
+    // Format the elapsed time and set it to the label
+    NSString *timeString = [dateFormatter stringFromDate:timerDate];
+    self.stopwatchLabel.text = timeString;
+}
+
 - (void)captureVideo:(CDVInvokedUrlCommand*)command
 {
+    //reset custom timer
+    [self.stopWatchTimer invalidate];
+    self.stopWatchTimer = nil;
+    
+    
     NSString* callbackId = command.callbackId;
     NSDictionary* options = [command.arguments objectAtIndex:0];
 
@@ -253,9 +339,10 @@
         [self.commandDelegate sendPluginResult:result callbackId:callbackId];
         pickerController = nil;
     } else {
+        
+        pickerController.allowsEditing = YES;
         pickerController.delegate = self;
         pickerController.sourceType = UIImagePickerControllerSourceTypeCamera;
-        pickerController.allowsEditing = NO;
         // iOS 3.0
         pickerController.mediaTypes = [NSArray arrayWithObjects:mediaType, nil];
 
@@ -275,28 +362,93 @@
         }
         // CDVImagePicker specific property
         pickerController.callbackId = callbackId;
+        
+        [pickerController setShowsCameraControls:NO];
+        [pickerController setToolbarHidden:YES];
+        [pickerController setDelegate:self];
+        CGAffineTransform cameraTransform = CGAffineTransformMakeScale(1.23, 1.23);
+        pickerController.cameraViewTransform = cameraTransform;
+        
+        UIView *overlayView = [[UIView alloc] initWithFrame:[[pickerController view]frame]];
+        [overlayView setBackgroundColor:[UIColor clearColor]];
+        
+        UIButton *btnFlashVideo = [UIButton buttonWithType:UIButtonTypeCustom];
+        [btnFlashVideo setFrame:CGRectMake(10, overlayView.frame.origin.y+10, 75, 42)];
+        UIImage *imageFlash =[UIImage imageNamed:@"VideoFlashOff.png"];
+        [btnFlashVideo setImage:imageFlash forState:UIControlStateNormal];
+        [btnFlashVideo addTarget:self action:@selector(flashOnCapture:) forControlEvents:UIControlEventTouchUpInside];
+        
+        //UIView *imageBlinkView = [[UIView alloc] init];
+        self.imageBlinkView = [[UIImageView alloc] initWithFrame:CGRectMake(110, overlayView.frame.origin.y+20, 20, 20)];
+        [self.imageBlinkView setImage:[UIImage imageNamed:@"VideoRecordBlink.png"]];
+        
+        
+        CGRect labelFrame = CGRectMake(160, overlayView.frame.origin.y+10, 75, 42);
+        self.stopwatchLabel = [[UILabel alloc] initWithFrame:labelFrame];
+        self.stopwatchLabel.textColor = [UIColor whiteColor];
+        self.stopwatchLabel.backgroundColor = [UIColor clearColor];
+        self.stopwatchLabel.text = @"00:00";
+        
+        
+        UIButton *btnSwitchVideo = [UIButton buttonWithType:UIButtonTypeCustom];
+        [btnSwitchVideo setFrame:CGRectMake(overlayView.frame.origin.x + overlayView.frame.size.width-85, overlayView.frame.origin.y+10, 75, 42)];
+        UIImage *imageSwitch =[UIImage imageNamed:@"VideoCameraSwitch.png"];
+        [btnSwitchVideo setImage:imageSwitch forState:UIControlStateNormal];
+        [btnSwitchVideo addTarget:self action:@selector(switchCameraCapture:) forControlEvents:UIControlEventTouchUpInside];
+        
+        UIButton *btnCancelVideo = [UIButton buttonWithType:UIButtonTypeCustom];
+        [btnCancelVideo setFrame:CGRectMake(10, overlayView.frame.origin.y + overlayView.frame.size.height - 60, 50, 50)];
+        UIImage *imageCancel =[UIImage imageNamed:@"VideoCancel.png"];
+        [btnCancelVideo setImage:imageCancel forState:UIControlStateNormal];
+        [btnCancelVideo addTarget:self action:@selector(cancelCapture:) forControlEvents:UIControlEventTouchUpInside];
+        
+        UIButton *btnCapture = [UIButton buttonWithType:UIButtonTypeCustom];
+        [btnCapture setFrame:CGRectMake(overlayView.frame.origin.x + (overlayView.frame.size.width/2) - (100 / 2), overlayView.frame.origin.y + overlayView.frame.size.height - 110, 100, 100)];
+        UIImage *imageCapture =[UIImage imageNamed:@"VideoRecord.png"];
+        [btnCapture setImage:imageCapture forState:UIControlStateNormal];
+        [btnCapture addTarget:self action:@selector(startCapture:) forControlEvents:UIControlEventTouchUpInside];
+        
+        //[[[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemCamera  target:self action:@selector(shootPicture)] autorelease]
+        
+        UIButton *btnCameraRoll = [UIButton buttonWithType:UIButtonTypeCustom];
+        [btnCameraRoll setFrame:CGRectMake(260, overlayView.frame.origin.y + overlayView.frame.size.height - 60, 50, 50)];
+        UIImage *imageCameraRoll =[UIImage imageNamed:@"VideoRoll.png"];
+        [btnCameraRoll setImage:imageCameraRoll forState:UIControlStateNormal];
+        [btnCameraRoll addTarget:self action:@selector(gotoLibrary:) forControlEvents:UIControlEventTouchUpInside];
 
-        SEL selector = NSSelectorFromString(@"presentViewController:animated:completion:");
-        if ([self.viewController respondsToSelector:selector]) {
+        [overlayView addSubview:btnFlashVideo];
+        [overlayView addSubview:self.imageBlinkView];
+        [overlayView addSubview:self.stopwatchLabel];
+        [overlayView addSubview:btnSwitchVideo];
+        [overlayView addSubview:btnCameraRoll];
+        [overlayView addSubview:btnCapture];
+        [overlayView addSubview:btnCancelVideo];
+        [pickerController setCameraOverlayView:overlayView];
+        
+
+        [[UIApplication sharedApplication] setStatusBarHidden:NO animated:NO];
+        [[UIApplication sharedApplication] setStatusBarStyle:UIStatusBarStyleBlackTranslucent animated:YES];
+        
+        if ([self.viewController respondsToSelector:@selector(presentViewController:::)]) {
             [self.viewController presentViewController:pickerController animated:YES completion:nil];
         } else {
-            // deprecated as of iOS >= 6.0
             [self.viewController presentModalViewController:pickerController animated:YES];
         }
     }
+    
 }
 
 - (CDVPluginResult*)processVideo:(NSString*)moviePath forCallbackId:(NSString*)callbackId
 {
     // save the movie to photo album (only avail as of iOS 3.1)
 
-    /* don't need, it should automatically get saved
+    // don't need, it should automatically get saved
      NSLog(@"can save %@: %d ?", moviePath, UIVideoAtPathIsCompatibleWithSavedPhotosAlbum(moviePath));
     if (&UIVideoAtPathIsCompatibleWithSavedPhotosAlbum != NULL && UIVideoAtPathIsCompatibleWithSavedPhotosAlbum(moviePath) == YES) {
         NSLog(@"try to save movie");
         UISaveVideoAtPathToSavedPhotosAlbum(moviePath, nil, nil, nil);
         NSLog(@"finished saving movie");
-    }*/
+    }
     // create MediaFile object
     NSDictionary* fileDict = [self getMediaDictionaryFromPath:moviePath ofType:nil];
     NSArray* fileArray = [NSArray arrayWithObject:fileDict];
@@ -597,10 +749,6 @@
 
 - (void)loadView
 {
-	if ([self respondsToSelector:@selector(edgesForExtendedLayout)]) {
-        self.edgesForExtendedLayout = UIRectEdgeNone;
-    }
-    
     // create view and display
     CGRect viewRect = [[UIScreen mainScreen] applicationFrame];
     UIView* tmp = [[UIView alloc] initWithFrame:viewRect];
@@ -642,12 +790,7 @@
     // timerLabel.autoresizingMask = reSizeMask;
     [self.timerLabel setBackgroundColor:[UIColor clearColor]];
     [self.timerLabel setTextColor:[UIColor whiteColor]];
-#ifdef __IPHONE_6_0
-    [self.timerLabel setTextAlignment:NSTextAlignmentCenter];
-#else
-    // for iOS SDK < 6.0
     [self.timerLabel setTextAlignment:UITextAlignmentCenter];
-#endif
     [self.timerLabel setText:@"0:00"];
     [self.timerLabel setAccessibilityHint:NSLocalizedString(@"recorded time in minutes and seconds", nil)];
     self.timerLabel.accessibilityTraits |= UIAccessibilityTraitUpdatesFrequently;
@@ -721,6 +864,32 @@
     }
 }
 
+- (void) viewDidAppear:(BOOL)animated {
+    OverlayView *overlay = [[OverlayView alloc] initWithFrame:CGRectMake(0, 0, 320, 480)];
+    
+    // Create a new image picker instance:
+    UIImagePickerController *picker = [[UIImagePickerController alloc] init];
+    
+    // Set the image picker source:
+    picker.sourceType = UIImagePickerControllerSourceTypeCamera;
+    
+    // Hide the controls:
+    picker.showsCameraControls = NO;
+    picker.navigationBarHidden = YES;
+    
+    // Make camera view full screen:
+    picker.wantsFullScreenLayout = YES;
+    picker.cameraViewTransform = CGAffineTransformScale(picker.cameraViewTransform, 1, 1.23);
+    
+    // Insert the overlay:
+    picker.cameraOverlayView = overlay;
+    
+    // Show the picker:
+    [self presentModalViewController:picker animated:YES];
+    
+    [super viewDidAppear:YES];
+}
+
 #if __IPHONE_OS_VERSION_MAX_ALLOWED >= 60000
     - (NSUInteger)supportedInterfaceOrientations
     {
@@ -750,47 +919,25 @@
         [self.recordButton setImage:stopRecordImage forState:UIControlStateNormal];
         self.recordButton.accessibilityTraits &= ~[self accessibilityTraits];
         [self.recordingView setHidden:NO];
-        __block NSError* error = nil;
-        
-        void (^startRecording)(void) = ^{
-            [self.avSession setCategory:AVAudioSessionCategoryRecord error:&error];
-            [self.avSession setActive:YES error:&error];
-            if (error) {
-                // can't continue without active audio session
-                self.errorCode = CAPTURE_INTERNAL_ERR;
-                [self dismissAudioView:nil];
-            } else {
-                if (self.duration) {
-                    self.isTimed = true;
-                    [self.avRecorder recordForDuration:[duration doubleValue]];
-                } else {
-                    [self.avRecorder record];
-                }
-                [self.timerLabel setText:@"0.00"];
-                self.timer = [NSTimer scheduledTimerWithTimeInterval:0.5f target:self selector:@selector(updateTime) userInfo:nil repeats:YES];
-                self.doneButton.enabled = NO;
-            }
-            UIAccessibilityPostNotification(UIAccessibilityLayoutChangedNotification, nil);
-        };
-        
-        SEL rrpSel = NSSelectorFromString(@"requestRecordPermission:");
-        if ([self.avSession respondsToSelector:rrpSel])
-        {
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Warc-performSelector-leaks"
-            [self.avSession performSelector:rrpSel withObject:^(BOOL granted){
-                if (granted) {
-                    startRecording();
-                } else {
-                    NSLog(@"Error creating audio session, microphone permission denied.");
-                    self.errorCode = CAPTURE_INTERNAL_ERR;
-                    [self dismissAudioView:nil];
-                }
-            }];
-#pragma clang diagnostic pop
+        NSError* error = nil;
+        [self.avSession setCategory:AVAudioSessionCategoryRecord error:&error];
+        [self.avSession setActive:YES error:&error];
+        if (error) {
+            // can't continue without active audio session
+            self.errorCode = CAPTURE_INTERNAL_ERR;
+            [self dismissAudioView:nil];
         } else {
-            startRecording();
+            if (self.duration) {
+                self.isTimed = true;
+                [self.avRecorder recordForDuration:[duration doubleValue]];
+            } else {
+                [self.avRecorder record];
+            }
+            [self.timerLabel setText:@"0.00"];
+            self.timer = [NSTimer scheduledTimerWithTimeInterval:0.5f target:self selector:@selector(updateTime) userInfo:nil repeats:YES];
+            self.doneButton.enabled = NO;
         }
+        UIAccessibilityPostNotification(UIAccessibilityLayoutChangedNotification, nil);
     }
 }
 

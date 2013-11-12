@@ -22,6 +22,7 @@
 #import <AVFoundation/AVFoundation.h>
 #import <Cordova/CDVPlugin.h>
 #import "CDVFile.h"
+#import "OverlayView.h"
 
 enum CDVCaptureError {
     CAPTURE_INTERNAL_ERR = 0,
@@ -50,6 +51,10 @@ typedef NSUInteger CDVCaptureError;
     BOOL inUse;
 }
 @property BOOL inUse;
+@property (strong, nonatomic) UILabel *stopwatchLabel;
+@property (strong, nonatomic) NSTimer *stopWatchTimer; // Store the timer that fires after a certain time
+@property (strong, nonatomic) NSDate *startDate; // Stores the date of the click on the start button
+@property (strong, nonatomic) UIImageView *imageBlinkView;
 - (void)captureAudio:(CDVInvokedUrlCommand*)command;
 - (void)captureImage:(CDVInvokedUrlCommand*)command;
 - (CDVPluginResult*)processImage:(UIImage*)image type:(NSString*)mimeType forCallbackId:(NSString*)callbackId;
@@ -115,4 +120,5 @@ typedef NSUInteger CDVCaptureError;
 - (void)dismissAudioView:(id)sender;
 - (NSString*)formatTime:(int)interval;
 - (void)updateTime;
+- (void)shootPicture;
 @end
