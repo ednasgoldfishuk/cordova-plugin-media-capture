@@ -379,11 +379,11 @@
         [btnFlashVideo addTarget:self action:@selector(flashOnCapture:) forControlEvents:UIControlEventTouchUpInside];
         
         //UIView *imageBlinkView = [[UIView alloc] init];
-        self.imageBlinkView = [[UIImageView alloc] initWithFrame:CGRectMake(110, overlayView.frame.origin.y+20, 20, 20)];
+        self.imageBlinkView = [[UIImageView alloc] initWithFrame:CGRectMake(overlayView.frame.origin.x + overlayView.frame.size.width/2 - 30, overlayView.frame.origin.y+20, 20, 20)];
         [self.imageBlinkView setImage:[UIImage imageNamed:@"VideoRecordBlink.png"]];
         
         
-        CGRect labelFrame = CGRectMake(160, overlayView.frame.origin.y+10, 75, 42);
+        CGRect labelFrame = CGRectMake(overlayView.frame.origin.x + overlayView.frame.size.width/2, overlayView.frame.origin.y+10, 75, 42);
         self.stopwatchLabel = [[UILabel alloc] initWithFrame:labelFrame];
         self.stopwatchLabel.textColor = [UIColor whiteColor];
         self.stopwatchLabel.backgroundColor = [UIColor clearColor];
@@ -411,7 +411,7 @@
         //[[[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemCamera  target:self action:@selector(shootPicture)] autorelease]
         
         UIButton *btnCameraRoll = [UIButton buttonWithType:UIButtonTypeCustom];
-        [btnCameraRoll setFrame:CGRectMake(260, overlayView.frame.origin.y + overlayView.frame.size.height - 60, 50, 50)];
+        [btnCameraRoll setFrame:CGRectMake(overlayView.frame.origin.x + overlayView.frame.size.width-60 , overlayView.frame.origin.y + overlayView.frame.size.height - 60, 50, 50)];
         UIImage *imageCameraRoll =[UIImage imageNamed:@"VideoRoll.png"];
         [btnCameraRoll setImage:imageCameraRoll forState:UIControlStateNormal];
         [btnCameraRoll addTarget:self action:@selector(gotoLibrary:) forControlEvents:UIControlEventTouchUpInside];
