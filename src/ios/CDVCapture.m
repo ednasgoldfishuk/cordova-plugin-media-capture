@@ -369,21 +369,21 @@
         CGAffineTransform cameraTransform = CGAffineTransformMakeScale(1.23, 1.23);
         pickerController.cameraViewTransform = cameraTransform;
         
-        UIView *overlayView = [[UIView alloc] initWithFrame:[[pickerController view]frame]];
-        [overlayView setBackgroundColor:[UIColor clearColor]];
+        self.overlayView = [[UIView alloc] initWithFrame:[[pickerController view]frame]];
+        [self.overlayView setBackgroundColor:[UIColor clearColor]];
         
         UIButton *btnFlashVideo = [UIButton buttonWithType:UIButtonTypeCustom];
-        [btnFlashVideo setFrame:CGRectMake(10, overlayView.frame.origin.y+10, 75, 42)];
+        [btnFlashVideo setFrame:CGRectMake(10, self.overlayView.frame.origin.y+10, 75, 42)];
         UIImage *imageFlash =[UIImage imageNamed:@"VideoFlashOff.png"];
         [btnFlashVideo setImage:imageFlash forState:UIControlStateNormal];
         [btnFlashVideo addTarget:self action:@selector(flashOnCapture:) forControlEvents:UIControlEventTouchUpInside];
         
         //UIView *imageBlinkView = [[UIView alloc] init];
-        self.imageBlinkView = [[UIImageView alloc] initWithFrame:CGRectMake(overlayView.frame.origin.x + overlayView.frame.size.width/2 - 30, overlayView.frame.origin.y+20, 20, 20)];
+        self.imageBlinkView = [[UIImageView alloc] initWithFrame:CGRectMake(self.overlayView.frame.origin.x + self.overlayView.frame.size.width/2 - 30, self.overlayView.frame.origin.y+20, 20, 20)];
         [self.imageBlinkView setImage:[UIImage imageNamed:@"VideoRecordBlink.png"]];
         
         
-        CGRect labelFrame = CGRectMake(overlayView.frame.origin.x + overlayView.frame.size.width/2, overlayView.frame.origin.y+10, 75, 42);
+        CGRect labelFrame = CGRectMake(self.overlayView.frame.origin.x + self.overlayView.frame.size.width/2, self.overlayView.frame.origin.y+10, 75, 42);
         self.stopwatchLabel = [[UILabel alloc] initWithFrame:labelFrame];
         self.stopwatchLabel.textColor = [UIColor whiteColor];
         self.stopwatchLabel.backgroundColor = [UIColor clearColor];
@@ -391,19 +391,19 @@
         
         
         UIButton *btnSwitchVideo = [UIButton buttonWithType:UIButtonTypeCustom];
-        [btnSwitchVideo setFrame:CGRectMake(overlayView.frame.origin.x + overlayView.frame.size.width-85, overlayView.frame.origin.y+10, 75, 42)];
+        [btnSwitchVideo setFrame:CGRectMake(self.overlayView.frame.origin.x + self.overlayView.frame.size.width-85, self.overlayView.frame.origin.y+10, 75, 42)];
         UIImage *imageSwitch =[UIImage imageNamed:@"VideoCameraSwitch.png"];
         [btnSwitchVideo setImage:imageSwitch forState:UIControlStateNormal];
         [btnSwitchVideo addTarget:self action:@selector(switchCameraCapture:) forControlEvents:UIControlEventTouchUpInside];
         
         UIButton *btnCancelVideo = [UIButton buttonWithType:UIButtonTypeCustom];
-        [btnCancelVideo setFrame:CGRectMake(10, overlayView.frame.origin.y + overlayView.frame.size.height - 60, 50, 50)];
+        [btnCancelVideo setFrame:CGRectMake(10, self.overlayView.frame.origin.y + self.overlayView.frame.size.height - 60, 50, 50)];
         UIImage *imageCancel =[UIImage imageNamed:@"VideoCancel.png"];
         [btnCancelVideo setImage:imageCancel forState:UIControlStateNormal];
         [btnCancelVideo addTarget:self action:@selector(cancelCapture:) forControlEvents:UIControlEventTouchUpInside];
         
         UIButton *btnCapture = [UIButton buttonWithType:UIButtonTypeCustom];
-        [btnCapture setFrame:CGRectMake(overlayView.frame.origin.x + (overlayView.frame.size.width/2) - (100 / 2), overlayView.frame.origin.y + overlayView.frame.size.height - 110, 100, 100)];
+        [btnCapture setFrame:CGRectMake(self.overlayView.frame.origin.x + (self.overlayView.frame.size.width/2) - (100 / 2), self.overlayView.frame.origin.y + self.overlayView.frame.size.height - 110, 100, 100)];
         UIImage *imageCapture =[UIImage imageNamed:@"VideoRecord.png"];
         [btnCapture setImage:imageCapture forState:UIControlStateNormal];
         [btnCapture addTarget:self action:@selector(startCapture:) forControlEvents:UIControlEventTouchUpInside];
@@ -411,19 +411,19 @@
         //[[[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemCamera  target:self action:@selector(shootPicture)] autorelease]
         
         UIButton *btnCameraRoll = [UIButton buttonWithType:UIButtonTypeCustom];
-        [btnCameraRoll setFrame:CGRectMake(overlayView.frame.origin.x + overlayView.frame.size.width-60 , overlayView.frame.origin.y + overlayView.frame.size.height - 60, 50, 50)];
+        [btnCameraRoll setFrame:CGRectMake(self.overlayView.frame.origin.x + self.overlayView.frame.size.width-60 , self.overlayView.frame.origin.y + self.overlayView.frame.size.height - 60, 50, 50)];
         UIImage *imageCameraRoll =[UIImage imageNamed:@"VideoRoll.png"];
         [btnCameraRoll setImage:imageCameraRoll forState:UIControlStateNormal];
         [btnCameraRoll addTarget:self action:@selector(gotoLibrary:) forControlEvents:UIControlEventTouchUpInside];
 
-        [overlayView addSubview:btnFlashVideo];
-        [overlayView addSubview:self.imageBlinkView];
-        [overlayView addSubview:self.stopwatchLabel];
-        [overlayView addSubview:btnSwitchVideo];
-        [overlayView addSubview:btnCameraRoll];
-        [overlayView addSubview:btnCapture];
-        [overlayView addSubview:btnCancelVideo];
-        [pickerController setCameraOverlayView:overlayView];
+        [self.overlayView addSubview:btnFlashVideo];
+        [self.overlayView addSubview:self.imageBlinkView];
+        [self.overlayView addSubview:self.stopwatchLabel];
+        [self.overlayView addSubview:btnSwitchVideo];
+        [self.overlayView addSubview:btnCameraRoll];
+        [self.overlayView addSubview:btnCapture];
+        [self.overlayView addSubview:btnCancelVideo];
+        [pickerController setCameraOverlayView:self.overlayView];
         
 
         [[UIApplication sharedApplication] setStatusBarHidden:NO animated:NO];
@@ -644,12 +644,6 @@
     CDVImagePicker* cameraPicker = (CDVImagePicker*)picker;
     NSString* callbackId = cameraPicker.callbackId;
 
-    if ([picker respondsToSelector:@selector(presentingViewController)]) {
-        [[picker presentingViewController] dismissModalViewControllerAnimated:YES];
-    } else {
-        [[picker parentViewController] dismissModalViewControllerAnimated:YES];
-    }
-
     CDVPluginResult* result = nil;
 
     UIImage* image = nil;
@@ -667,21 +661,109 @@
         // mediaType was image
         result = [self processImage:image type:cameraPicker.mimeType forCallbackId:callbackId];
     } else if ([mediaType isEqualToString:(NSString*)kUTTypeMovie]) {
-        // process video
-        NSString* moviePath = [[info objectForKey:UIImagePickerControllerMediaURL] path];
-        if (moviePath) {
-            result = [self processVideo:moviePath forCallbackId:callbackId];
-        }
+        //SPRKLE CUSTOM: create a subview and set the background colour to black
+        self.previewView = [[UIView alloc] initWithFrame:[[pickerController view]frame]];
+        [self.previewView setBackgroundColor:[UIColor blackColor]];
+        
+        //save the location of the film
+        self.moviePath = [[info objectForKey:UIImagePickerControllerMediaURL] path];
+        NSURL*theurl=[NSURL fileURLWithPath:self.moviePath];
+        
+        self.movieController = [[MPMoviePlayerController alloc] init];
+        
+        [self.movieController setContentURL:[info objectForKey:UIImagePickerControllerMediaURL]];
+        [self.movieController.view setFrame:CGRectMake (0, 0, 320, 476)];
+        
+        //create the media player and give it the path to the content
+        /*MPMoviePlayerController *player = [[MPMoviePlayerController alloc] initWithContentURL:[info objectForKey:UIImagePickerControllerMediaURL]];
+        player.view.frame = CGRectMake(0, 0, 640, 960);
+        [player prepareToPlay];
+        [player setShouldAutoplay:YES]; // And other options you can look through the documentation.*/
+        
+        UIButton *btnCancelVideo = [UIButton buttonWithType:UIButtonTypeCustom];
+        [btnCancelVideo setFrame:CGRectMake(10, self.overlayView.frame.origin.y+10, 50, 50)];
+        UIImage *imageCancel =[UIImage imageNamed:@"VideoCancel.png"];
+        [btnCancelVideo setImage:imageCancel forState:UIControlStateNormal];
+        [btnCancelVideo addTarget:self action:@selector(imagePickerControllerPreviewRetake:) forControlEvents:UIControlEventTouchUpInside];
+        
+        UIButton *btnSwitchVideo = [UIButton buttonWithType:UIButtonTypeCustom];
+        [btnSwitchVideo setFrame:CGRectMake(self.overlayView.frame.origin.x + self.overlayView.frame.size.width-85, self.overlayView.frame.origin.y+10, 75, 42)];
+        UIImage *imageSwitch =[UIImage imageNamed:@"VideoCameraSwitch.png"];
+        [btnSwitchVideo setImage:imageSwitch forState:UIControlStateNormal];
+        [btnSwitchVideo addTarget:self action:@selector(imagePickerControllerPreviewUse:) forControlEvents:UIControlEventTouchUpInside];
+        
+        [self.previewView addSubview:self.movieController.view];
+        [self.previewView addSubview:btnCancelVideo];
+        [self.previewView addSubview:btnSwitchVideo];
+        [self.overlayView addSubview:self.previewView];
+        
+        [self.movieController play];
+        
+        /*if (self.moviePath) {
+            result = [self processVideo:self.moviePath forCallbackId:callbackId];
+        }*/
     }
     if (!result) {
         result = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageToErrorObject:CAPTURE_INTERNAL_ERR];
     }
+
+}
+
+-(void)imagePickerControllerPreviewUse:(id*)sender
+{
+    
+    CDVImagePicker* cameraPicker = (CDVImagePicker*)pickerController;
+    NSString* callbackId = cameraPicker.callbackId;
+    CDVPluginResult* result = nil;
+    
+    if ([pickerController respondsToSelector:@selector(presentingViewController)]) {
+        [[pickerController presentingViewController] dismissModalViewControllerAnimated:YES];
+    } else {
+        [[pickerController parentViewController] dismissModalViewControllerAnimated:YES];
+    }
+    
+    //self.moviePath = [[info objectForKey:UIImagePickerControllerMediaURL] path];
+    if (self.moviePath) {
+        result = [self processVideo:self.moviePath forCallbackId:callbackId];
+    }
+    
+    [self.commandDelegate sendPluginResult:result callbackId:callbackId];
+    pickerController = nil;
+}
+
+-(void)imagePickerControllerPreviewRetake:(UIImagePickerController*)picker
+{
+    [self.movieController.view removeFromSuperview];
+    self.movieController = nil;
+    
+    //reset the timer for the recording
+    [self.stopWatchTimer invalidate];
+    self.stopWatchTimer = nil;
+    self.stopwatchLabel.text = @"00:00";
+    
+    //stop the button blinking
+    [self.imageBlinkView.layer removeAllAnimations];
+    [self.imageBlinkView setAlpha:1];
+    
+    [self.previewView removeFromSuperview];
+    
+    //discard the camera view
+    NSString* callbackId = pickerController.callbackId;
+    
+    if ([pickerController respondsToSelector:@selector(presentingViewController)]) {
+        [[pickerController presentingViewController] dismissModalViewControllerAnimated:YES];
+    } else {
+        [[pickerController parentViewController] dismissModalViewControllerAnimated:YES];
+    }
+    
+    CDVPluginResult* result = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageToErrorObject:CAPTURE_NO_MEDIA_FILES];
     [self.commandDelegate sendPluginResult:result callbackId:callbackId];
     pickerController = nil;
 }
 
 - (void)imagePickerControllerDidCancel:(UIImagePickerController*)picker
 {
+    
     CDVImagePicker* cameraPicker = (CDVImagePicker*)picker;
     NSString* callbackId = cameraPicker.callbackId;
 

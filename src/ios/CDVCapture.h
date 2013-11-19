@@ -22,6 +22,7 @@
 #import <AVFoundation/AVFoundation.h>
 #import <Cordova/CDVPlugin.h>
 #import "CDVFile.h"
+#import <MediaPlayer/MediaPlayer.h>
  
 enum CDVCaptureError {
     CAPTURE_INTERNAL_ERR = 0,
@@ -50,7 +51,11 @@ typedef NSUInteger CDVCaptureError;
     BOOL inUse;
 }
 @property BOOL inUse;
+@property (strong, nonatomic) UIView *overlayView;
+@property (strong, nonatomic) UIView *previewView;
 @property (strong, nonatomic) UILabel *stopwatchLabel;
+@property (strong, nonatomic) NSString *moviePath;
+@property (strong, nonatomic) MPMoviePlayerController *movieController;
 @property (strong, nonatomic) NSTimer *stopWatchTimer; // Store the timer that fires after a certain time
 @property (strong, nonatomic) NSDate *startDate; // Stores the date of the click on the start button
 @property (strong, nonatomic) UIImageView *imageBlinkView;
