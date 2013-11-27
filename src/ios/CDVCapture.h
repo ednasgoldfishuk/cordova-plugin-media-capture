@@ -20,6 +20,7 @@
 #import <Foundation/Foundation.h>
 #import <MobileCoreServices/MobileCoreServices.h>
 #import <AVFoundation/AVFoundation.h>
+#import <AssetsLibrary/AssetsLibrary.h>
 #import <Cordova/CDVPlugin.h>
 #import "CDVFile.h"
 #import <MediaPlayer/MediaPlayer.h>
@@ -51,14 +52,23 @@ typedef NSUInteger CDVCaptureError;
     BOOL inUse;
 }
 @property BOOL inUse;
+@property BOOL pauseRecord;
+@property (strong, nonatomic) NSMutableArray *assetArray;
 @property (strong, nonatomic) UIView *overlayView;
 @property (strong, nonatomic) UIView *previewView;
+@property (strong, nonatomic) UIAlertView *alertSpinner;
 @property (strong, nonatomic) UILabel *stopwatchLabel;
 @property (strong, nonatomic) NSString *moviePath;
 @property (strong, nonatomic) MPMoviePlayerController *movieController;
 @property (strong, nonatomic) NSTimer *stopWatchTimer; // Store the timer that fires after a certain time
 @property (strong, nonatomic) NSDate *startDate; // Stores the date of the click on the start button
+@property (strong, nonatomic) NSNumber *pauseRecordTime; // stores the time when the pause was clicked
 @property (strong, nonatomic) UIImageView *imageBlinkView;
+@property (nonatomic, strong) UIButton* btnAcceptVideo;
+@property (nonatomic, strong) UIButton* btnCameraRoll;
+@property (nonatomic, strong) UIButton* btnCapture;
+@property (nonatomic, strong) UIButton* btnCapturePause;
+- (NSString*)timeFormatted:(int)totalSeconds;
 - (void)captureAudio:(CDVInvokedUrlCommand*)command;
 - (void)captureImage:(CDVInvokedUrlCommand*)command;
 - (CDVPluginResult*)processImage:(UIImage*)image type:(NSString*)mimeType forCallbackId:(NSString*)callbackId;
@@ -70,7 +80,6 @@ typedef NSUInteger CDVCaptureError;
 - (void)imagePickerController:(UIImagePickerController*)picker didFinishPickingMediaWithInfo:(NSDictionary*)info;
 - (void)imagePickerController:(UIImagePickerController*)picker didFinishPickingImage:(UIImage*)image editingInfo:(NSDictionary*)editingInfo;
 - (void)imagePickerControllerDidCancel:(UIImagePickerController*)picker;
-
 @end
 
 @interface CDVAudioNavigationController : UINavigationController

@@ -210,11 +210,24 @@
     
 }
 
+- (void)animateBlinkerStop
+{
+
+    [self.imageBlinkView.layer removeAllAnimations];
+    
+    self.imageBlinkView.alpha = 1.0;
+    
+}
+
 - (void)startCapture:(id)sender {
     
-    if (self.stopWatchTimer == nil)
+    if (self.pauseRecord == YES)
     {
-        [pickerController startVideoCapture];
+        self.pauseRecord = NO;
+        
+        self.btnCapture.alpha = 0.0;
+        self.btnCapturePause.alpha = 1.0;
+
         //timer functionality
         self.startDate = [NSDate date];
         // Create the stop watch timer that fires every 100 ms
@@ -224,18 +237,212 @@
                                                              userInfo:nil
                                                               repeats:YES];
         [self animateBlinker];
+        
+        //the user has started recording therefore will be using the accept button not the library
+        self.btnCameraRoll.alpha = 0.0;
+        self.btnAcceptVideo.alpha = 1.0;
+        
+        [pickerController startVideoCapture];
     }
-    else
+    else if (self.pauseRecord == NO) //pause the timer and recording of video
     {
+        self.pauseRecord = YES;
+
+        self.btnCapture.alpha = 1.0;
+        self.btnCapturePause.alpha = 0.0;
+        
+        NSDate *currentDate = [NSDate date];
+        NSTimeInterval timeInterval = [currentDate timeIntervalSinceDate:self.startDate];
+        NSDate *timerDate = [NSDate dateWithTimeIntervalSince1970:timeInterval];
+        
+        // Create a date formatter
+        NSDateFormatter *dateFormatter = [[NSDateFormatter alloc] init];
+        [dateFormatter setDateFormat:@"sss"];
+        [dateFormatter setTimeZone:[NSTimeZone timeZoneForSecondsFromGMT:0.0]];
+        
+        // Format the elapsed time and set it to the label
+        NSString *timeString = [dateFormatter stringFromDate:timerDate];
+        
+        NSNumber *timerInt = [NSNumber numberWithInteger:[timeString integerValue]];
+        self.pauseRecordTime = [NSNumber numberWithInteger:[self.pauseRecordTime intValue] + [timerInt intValue]];
+        NSLog([NSString stringWithFormat:@"%d",[self.pauseRecordTime intValue]]);
+
+        [self animateBlinkerStop];
+        
         [self.stopWatchTimer invalidate];
         self.stopWatchTimer = nil;
+        
         [pickerController stopVideoCapture];
-        //self.stopwatchLabel.text = @"00:00";
+        
     }
+    
+}
+
+- (NSString *)timeFormatted:(int)totalSeconds
+{
+    
+    int seconds = totalSeconds % 60;
+    int minutes = (totalSeconds / 60) % 60;
+    
+    return [NSString stringWithFormat:@"%02d:%02d", minutes, seconds];
 }
 
 - (void)stopCapture:(id)sender {
-    //[pickerController startVideoCapture];
+    NSMutableArray *layerInstructions = [[NSMutableArray alloc] init];
+    
+    self.alertSpinner = [[UIAlertView alloc] initWithTitle:@"Working" message:@"Saving video"  delegate:nil cancelButtonTitle:nil otherButtonTitles: nil, nil];
+    [self.alertSpinner show];
+    UIActivityIndicatorView *spinner = [[UIActivityIndicatorView alloc] initWithActivityIndicatorStyle:UIActivityIndicatorViewStyleWhiteLarge];
+    spinner.center = CGPointMake(self.alertSpinner.bounds.size.width / 2, self.alertSpinner.bounds.size.height - 50);
+    [spinner startAnimating];
+    [self.alertSpinner addSubview:spinner];
+    [self.overlayView addSubview:self.alertSpinner];
+    
+    CMTime videoTotalTime = kCMTimeZero;
+    
+    //Create AVMutableComposition Object.This object will hold our multiple AVMutableCompositionTrack.
+    AVMutableComposition* mixComposition = [[AVMutableComposition alloc] init];
+    
+    for (AVAsset *asset in self.assetArray) {
+        
+        //VIDEO TRACK
+        AVMutableCompositionTrack *track = [mixComposition addMutableTrackWithMediaType:AVMediaTypeVideo preferredTrackID:kCMPersistentTrackID_Invalid];
+        [track insertTimeRange:CMTimeRangeMake(kCMTimeZero, asset.duration) ofTrack:[[asset tracksWithMediaType:AVMediaTypeVideo] objectAtIndex:0] atTime:videoTotalTime error:nil];
+        
+        //AUDIO TRACK
+        AVMutableCompositionTrack *audioTrack = [mixComposition addMutableTrackWithMediaType:AVMediaTypeAudio preferredTrackID:kCMPersistentTrackID_Invalid];
+        [audioTrack insertTimeRange:CMTimeRangeMake(kCMTimeZero, asset.duration) ofTrack:[[asset tracksWithMediaType:AVMediaTypeAudio] objectAtIndex:0] atTime:videoTotalTime error:nil];
+        
+        videoTotalTime = CMTimeAdd(videoTotalTime,[asset duration]);
+        
+        //FIXING ORIENTATION//
+        AVMutableVideoCompositionLayerInstruction *layerInstruction = [AVMutableVideoCompositionLayerInstruction videoCompositionLayerInstructionWithAssetTrack:track];
+        AVAssetTrack *assetTrack = [[asset tracksWithMediaType:AVMediaTypeVideo] objectAtIndex:0];
+        UIImageOrientation assetOrientation_  = UIImageOrientationUp;
+        BOOL  isFirstAssetPortrait_  = NO;
+        CGAffineTransform firstTransform = assetTrack.preferredTransform;
+        if(firstTransform.a == 0 && firstTransform.b == 1.0 && firstTransform.c == -1.0 && firstTransform.d == 0)  {assetOrientation_= UIImageOrientationRight; isFirstAssetPortrait_ = YES;}
+        if(firstTransform.a == 0 && firstTransform.b == -1.0 && firstTransform.c == 1.0 && firstTransform.d == 0)  {assetOrientation_ =  UIImageOrientationLeft; isFirstAssetPortrait_ = YES;}
+        if(firstTransform.a == 1.0 && firstTransform.b == 0 && firstTransform.c == 0 && firstTransform.d == 1.0)   {assetOrientation_ =  UIImageOrientationUp;}
+        if(firstTransform.a == -1.0 && firstTransform.b == 0 && firstTransform.c == 0 && firstTransform.d == -1.0) {assetOrientation_ = UIImageOrientationDown;}
+        CGFloat FirstAssetScaleToFitRatio = 320.0/assetTrack.naturalSize.width;
+        if(isFirstAssetPortrait_){
+            FirstAssetScaleToFitRatio = 320.0/assetTrack.naturalSize.height;
+            CGAffineTransform FirstAssetScaleFactor = CGAffineTransformMakeScale(FirstAssetScaleToFitRatio,FirstAssetScaleToFitRatio);
+            [layerInstruction setTransform:CGAffineTransformConcat(assetTrack.preferredTransform, FirstAssetScaleFactor) atTime:kCMTimeZero];
+        }else{
+            CGAffineTransform FirstAssetScaleFactor = CGAffineTransformMakeScale(FirstAssetScaleToFitRatio,FirstAssetScaleToFitRatio);
+            [layerInstruction setTransform:CGAffineTransformConcat(CGAffineTransformConcat(assetTrack.preferredTransform, FirstAssetScaleFactor),CGAffineTransformMakeTranslation(0, 160)) atTime:kCMTimeZero];
+        }
+        [layerInstruction setOpacity:0.0 atTime:videoTotalTime];
+        
+        [layerInstructions addObject:layerInstruction];
+    }
+    
+    AVMutableVideoCompositionInstruction * MainInstruction = [AVMutableVideoCompositionInstruction videoCompositionInstruction];
+    MainInstruction.timeRange = CMTimeRangeMake(kCMTimeZero, videoTotalTime);
+    
+    MainInstruction.layerInstructions = layerInstructions;
+    
+    AVMutableVideoComposition *MainCompositionInst = [AVMutableVideoComposition videoComposition];
+    MainCompositionInst.instructions = [NSArray arrayWithObject:MainInstruction];
+    MainCompositionInst.frameDuration = CMTimeMake(1, 30);
+    MainCompositionInst.renderSize = CGSizeMake(320.0, 480.0);
+    
+    NSArray *paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
+    NSString *documentsDirectory = [paths objectAtIndex:0];
+    NSString *myPathDocs =  [documentsDirectory stringByAppendingPathComponent:[NSString stringWithFormat:@"mergeVideo-%d.mov",arc4random() % 1000]];
+    
+    NSURL *url = [NSURL fileURLWithPath:myPathDocs];
+    
+    AVAssetExportSession *exporter = [[AVAssetExportSession alloc] initWithAsset:mixComposition presetName:AVAssetExportPresetHighestQuality];
+    exporter.outputURL=url;
+    exporter.outputFileType = AVFileTypeQuickTimeMovie;
+    exporter.videoComposition = MainCompositionInst;
+    exporter.shouldOptimizeForNetworkUse = YES;
+    [exporter exportAsynchronouslyWithCompletionHandler:^
+     {
+         dispatch_async(dispatch_get_main_queue(), ^{
+             [self exportDidFinish:exporter];
+         });
+     }];
+    
+}
+
+- (void)exportDidFinish:(AVAssetExportSession*)session
+{
+    [self.alertSpinner dismissWithClickedButtonIndex:0 animated:YES];
+    
+    if (session.error)
+    {
+        NSLog(@"%@", session.error);
+        //stringError = [session.error localizedDescription];
+        //cause = session.error.localizedFailureReason;
+        
+    }
+    else
+        //stringError = @"Unknown error";
+    //NSLog(@"Error: %@ because %@", stringError, cause);
+    for (NSString *key in session.error.userInfo.allKeys)
+    {
+        NSLog(@"%@: %@", key, [session.error.userInfo objectForKey:key]);
+    }
+    
+    if(session.status == AVAssetExportSessionStatusCompleted){
+        NSURL *outputURL = session.outputURL;
+        ALAssetsLibrary *library = [[ALAssetsLibrary alloc] init];
+        if ([library videoAtPathIsCompatibleWithSavedPhotosAlbum:outputURL]) {
+            [library writeVideoAtPathToSavedPhotosAlbum:outputURL
+                                        completionBlock:^(NSURL *assetURL, NSError *error){
+                                            dispatch_async(dispatch_get_main_queue(), ^{
+                                                if (error) {
+                                                    UIAlertView *alert = [[UIAlertView alloc] initWithTitle:@"Error" message:@"Video Saving Failed"  delegate:nil cancelButtonTitle:@"Ok" otherButtonTitles: nil, nil];
+                                                    [alert show];
+                                                }else{
+                                                    /*UIAlertView *alert = [[UIAlertView alloc] initWithTitle:@"Video Saved" message:@"Saved To Photo Album"  delegate:self cancelButtonTitle:@"Ok" otherButtonTitles: nil];
+                                                    [alert show];
+                                                     */
+                                                    self.previewView = [[UIView alloc] initWithFrame:[[pickerController view]frame]];
+                                                     [self.previewView setBackgroundColor:[UIColor blackColor]];
+                                                     
+                                                     //save the location of the film
+                                                    self.moviePath = session.outputURL.relativePath;
+
+                                                     NSURL*theurl=assetURL;
+                                                     
+                                                     self.movieController = [[MPMoviePlayerController alloc] init];
+                                                     
+                                                     [self.movieController setContentURL:assetURL];
+                                                     [self.movieController.view setFrame:CGRectMake (0, 0, 320, 476)];
+                                                     
+                                                     UIButton *btnCancelVideo = [UIButton buttonWithType:UIButtonTypeCustom];
+                                                     [btnCancelVideo setFrame:CGRectMake(10, self.overlayView.frame.origin.y+10, 50, 50)];
+                                                     UIImage *imageCancel =[UIImage imageNamed:@"VideoCancel.png"];
+                                                     [btnCancelVideo setImage:imageCancel forState:UIControlStateNormal];
+                                                     [btnCancelVideo addTarget:self action:@selector(imagePickerControllerPreviewRetake:) forControlEvents:UIControlEventTouchUpInside];
+                                                     
+                                                     UIButton *btnAcceptVideo = [UIButton buttonWithType:UIButtonTypeCustom];
+                                                     [btnAcceptVideo setFrame:CGRectMake(self.overlayView.frame.origin.x + self.overlayView.frame.size.width-60, self.overlayView.frame.origin.y+10, 50, 50)];
+                                                     UIImage *imageVideoAccept =[UIImage imageNamed:@"VideoAccept.png"];
+                                                     [btnAcceptVideo setImage:imageVideoAccept forState:UIControlStateNormal];
+                                                     [btnAcceptVideo addTarget:self action:@selector(imagePickerControllerPreviewUse:) forControlEvents:UIControlEventTouchUpInside];
+                                                     
+                                                     [self.previewView addSubview:self.movieController.view];
+                                                     [self.previewView addSubview:btnCancelVideo];
+                                                     [self.previewView addSubview:btnAcceptVideo];
+                                                     [self.overlayView addSubview:self.previewView];
+                                                     
+                                                     [self.movieController play];
+                                                }
+                                                
+                                            });
+                                            
+                                        }];
+        }
+    }
+    
+    self.assetArray = nil;
+    //[ActivityView stopAnimating];
 }
 
 - (void)cancelCapture:(id)sender {
@@ -282,19 +489,23 @@
 
 - (void)updateTimer
 {
-    // Create date from the elapsed time
+    
     NSDate *currentDate = [NSDate date];
     NSTimeInterval timeInterval = [currentDate timeIntervalSinceDate:self.startDate];
     NSDate *timerDate = [NSDate dateWithTimeIntervalSince1970:timeInterval];
     
     // Create a date formatter
     NSDateFormatter *dateFormatter = [[NSDateFormatter alloc] init];
-    [dateFormatter setDateFormat:@"mm:ss"];
+    [dateFormatter setDateFormat:@"sss"];
     [dateFormatter setTimeZone:[NSTimeZone timeZoneForSecondsFromGMT:0.0]];
     
     // Format the elapsed time and set it to the label
     NSString *timeString = [dateFormatter stringFromDate:timerDate];
-    self.stopwatchLabel.text = timeString;
+    NSNumber *timeNumber;
+    
+    timeNumber = [NSNumber numberWithInteger:[timeString intValue] + [self.pauseRecordTime intValue]];
+    self.stopwatchLabel.text = [self timeFormatted:[timeNumber intValue]];
+    
 }
 
 - (void)captureVideo:(CDVInvokedUrlCommand*)command
@@ -388,6 +599,8 @@
         self.stopwatchLabel.textColor = [UIColor whiteColor];
         self.stopwatchLabel.backgroundColor = [UIColor clearColor];
         self.stopwatchLabel.text = @"00:00";
+        self.pauseRecord = YES;         //assign video recording to paused
+        self.pauseRecordTime = [NSNumber numberWithInteger:0];       //assign current timer value to 0
         
         
         UIButton *btnSwitchVideo = [UIButton buttonWithType:UIButtonTypeCustom];
@@ -402,29 +615,48 @@
         [btnCancelVideo setImage:imageCancel forState:UIControlStateNormal];
         [btnCancelVideo addTarget:self action:@selector(cancelCapture:) forControlEvents:UIControlEventTouchUpInside];
         
-        UIButton *btnCapture = [UIButton buttonWithType:UIButtonTypeCustom];
-        [btnCapture setFrame:CGRectMake(self.overlayView.frame.origin.x + (self.overlayView.frame.size.width/2) - (100 / 2), self.overlayView.frame.origin.y + self.overlayView.frame.size.height - 110, 100, 100)];
+        self.btnCapture = [UIButton buttonWithType:UIButtonTypeCustom];
+        [self.btnCapture setFrame:CGRectMake(self.overlayView.frame.origin.x + (self.overlayView.frame.size.width/2) - (100 / 2), self.overlayView.frame.origin.y + self.overlayView.frame.size.height - 110, 100, 100)];
         UIImage *imageCapture =[UIImage imageNamed:@"VideoRecord.png"];
-        [btnCapture setImage:imageCapture forState:UIControlStateNormal];
-        [btnCapture addTarget:self action:@selector(startCapture:) forControlEvents:UIControlEventTouchUpInside];
+        [self.btnCapture setImage:imageCapture forState:UIControlStateNormal];
+        [self.btnCapture addTarget:self action:@selector(startCapture:) forControlEvents:UIControlEventTouchUpInside];
+        
+        self.btnCapturePause = [UIButton buttonWithType:UIButtonTypeCustom];
+        [self.btnCapturePause setFrame:CGRectMake(self.overlayView.frame.origin.x + (self.overlayView.frame.size.width/2) - (100 / 2), self.overlayView.frame.origin.y + self.overlayView.frame.size.height - 110, 100, 100)];
+        UIImage *imageCapturePause =[UIImage imageNamed:@"VideoRecordPause.png"];
+        [self.btnCapturePause setImage:imageCapturePause forState:UIControlStateNormal];
+        [self.btnCapturePause addTarget:self action:@selector(startCapture:) forControlEvents:UIControlEventTouchUpInside];
+        self.btnCapturePause.alpha = 0.0;
         
         //[[[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemCamera  target:self action:@selector(shootPicture)] autorelease]
         
-        UIButton *btnCameraRoll = [UIButton buttonWithType:UIButtonTypeCustom];
-        [btnCameraRoll setFrame:CGRectMake(self.overlayView.frame.origin.x + self.overlayView.frame.size.width-60 , self.overlayView.frame.origin.y + self.overlayView.frame.size.height - 60, 50, 50)];
+        self.btnCameraRoll = [UIButton buttonWithType:UIButtonTypeCustom];
+        [self.btnCameraRoll setFrame:CGRectMake(self.overlayView.frame.origin.x + self.overlayView.frame.size.width-60 , self.overlayView.frame.origin.y + self.overlayView.frame.size.height - 60, 50, 50)];
         UIImage *imageCameraRoll =[UIImage imageNamed:@"VideoRoll.png"];
-        [btnCameraRoll setImage:imageCameraRoll forState:UIControlStateNormal];
-        [btnCameraRoll addTarget:self action:@selector(gotoLibrary:) forControlEvents:UIControlEventTouchUpInside];
-
+        [self.btnCameraRoll setImage:imageCameraRoll forState:UIControlStateNormal];
+        [self.btnCameraRoll addTarget:self action:@selector(gotoLibrary:) forControlEvents:UIControlEventTouchUpInside];
+        self.btnCameraRoll.alpha = 1.0;
+        
+        self.btnAcceptVideo = [UIButton buttonWithType:UIButtonTypeCustom];
+        [self.btnAcceptVideo setFrame:CGRectMake(self.overlayView.frame.origin.x + self.overlayView.frame.size.width-60 , self.overlayView.frame.origin.y + self.overlayView.frame.size.height - 60, 50, 50)];
+        UIImage *imageVideoAccept =[UIImage imageNamed:@"VideoAccept.png"];
+        [self.btnAcceptVideo setImage:imageVideoAccept forState:UIControlStateNormal];
+        [self.btnAcceptVideo addTarget:self action:@selector(stopCapture:) forControlEvents:UIControlEventTouchUpInside];
+        self.btnAcceptVideo.alpha = 0.0;
+        
         [self.overlayView addSubview:btnFlashVideo];
         [self.overlayView addSubview:self.imageBlinkView];
         [self.overlayView addSubview:self.stopwatchLabel];
         [self.overlayView addSubview:btnSwitchVideo];
-        [self.overlayView addSubview:btnCameraRoll];
-        [self.overlayView addSubview:btnCapture];
+        [self.overlayView addSubview:self.btnAcceptVideo];
+        [self.overlayView addSubview:self.btnCameraRoll];
+        [self.overlayView addSubview:self.btnCapture];
+        [self.overlayView addSubview:self.btnCapturePause];
         [self.overlayView addSubview:btnCancelVideo];
         [pickerController setCameraOverlayView:self.overlayView];
         
+        //make a new array to store the paused video clips
+        self.assetArray = [NSMutableArray new];
 
         [[UIApplication sharedApplication] setStatusBarHidden:NO animated:NO];
         [[UIApplication sharedApplication] setStatusBarStyle:UIStatusBarStyleBlackTranslucent animated:YES];
@@ -662,46 +894,17 @@
         result = [self processImage:image type:cameraPicker.mimeType forCallbackId:callbackId];
     } else if ([mediaType isEqualToString:(NSString*)kUTTypeMovie]) {
         //SPRKLE CUSTOM: create a subview and set the background colour to black
-        self.previewView = [[UIView alloc] initWithFrame:[[pickerController view]frame]];
-        [self.previewView setBackgroundColor:[UIColor blackColor]];
         
-        //save the location of the film
-        self.moviePath = [[info objectForKey:UIImagePickerControllerMediaURL] path];
-        NSURL*theurl=[NSURL fileURLWithPath:self.moviePath];
+        [[pickerController parentViewController] dismissModalViewControllerAnimated:NO];
+        // Handle a movie capture
+        //UIAlertView *alert = [[UIAlertView alloc] initWithTitle:@"Asset Loaded" message:@"Video One Loaded"  delegate:nil cancelButtonTitle:@"Ok" otherButtonTitles: nil, nil];
+        //[alert show];
+        AVAsset *videoAsset = [AVAsset assetWithURL:[info objectForKey:UIImagePickerControllerMediaURL]];
         
-        self.movieController = [[MPMoviePlayerController alloc] init];
+        [self.assetArray addObject:videoAsset];
+         
+        NSLog(@"adding to array: %i", self.assetArray.count);
         
-        [self.movieController setContentURL:[info objectForKey:UIImagePickerControllerMediaURL]];
-        [self.movieController.view setFrame:CGRectMake (0, 0, 320, 476)];
-        
-        //create the media player and give it the path to the content
-        /*MPMoviePlayerController *player = [[MPMoviePlayerController alloc] initWithContentURL:[info objectForKey:UIImagePickerControllerMediaURL]];
-        player.view.frame = CGRectMake(0, 0, 640, 960);
-        [player prepareToPlay];
-        [player setShouldAutoplay:YES]; // And other options you can look through the documentation.*/
-        
-        UIButton *btnCancelVideo = [UIButton buttonWithType:UIButtonTypeCustom];
-        [btnCancelVideo setFrame:CGRectMake(10, self.overlayView.frame.origin.y+10, 50, 50)];
-        UIImage *imageCancel =[UIImage imageNamed:@"VideoCancel.png"];
-        [btnCancelVideo setImage:imageCancel forState:UIControlStateNormal];
-        [btnCancelVideo addTarget:self action:@selector(imagePickerControllerPreviewRetake:) forControlEvents:UIControlEventTouchUpInside];
-        
-        UIButton *btnSwitchVideo = [UIButton buttonWithType:UIButtonTypeCustom];
-        [btnSwitchVideo setFrame:CGRectMake(self.overlayView.frame.origin.x + self.overlayView.frame.size.width-85, self.overlayView.frame.origin.y+10, 75, 42)];
-        UIImage *imageSwitch =[UIImage imageNamed:@"VideoCameraSwitch.png"];
-        [btnSwitchVideo setImage:imageSwitch forState:UIControlStateNormal];
-        [btnSwitchVideo addTarget:self action:@selector(imagePickerControllerPreviewUse:) forControlEvents:UIControlEventTouchUpInside];
-        
-        [self.previewView addSubview:self.movieController.view];
-        [self.previewView addSubview:btnCancelVideo];
-        [self.previewView addSubview:btnSwitchVideo];
-        [self.overlayView addSubview:self.previewView];
-        
-        [self.movieController play];
-        
-        /*if (self.moviePath) {
-            result = [self processVideo:self.moviePath forCallbackId:callbackId];
-        }*/
     }
     if (!result) {
         result = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageToErrorObject:CAPTURE_INTERNAL_ERR];
@@ -711,6 +914,9 @@
 
 -(void)imagePickerControllerPreviewUse:(id*)sender
 {
+    
+    //stop the video if its still playing
+    [self.movieController stop];
     
     CDVImagePicker* cameraPicker = (CDVImagePicker*)pickerController;
     NSString* callbackId = cameraPicker.callbackId;
