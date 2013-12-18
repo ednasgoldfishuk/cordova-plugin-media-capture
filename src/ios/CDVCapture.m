@@ -578,6 +578,8 @@
     [self.stopWatchTimer invalidate];
     self.stopWatchTimer = nil;
     
+    self.librarySource = YES;
+    
     [pickerController setSourceType:UIImagePickerControllerSourceTypeSavedPhotosAlbum];
     
 }
@@ -609,6 +611,8 @@
     [self.stopWatchTimer invalidate];
     self.stopWatchTimer = nil;
     
+    //set the source to not be library as default
+    self.librarySource = NO;
     
     NSString* callbackId = command.callbackId;
     NSDictionary* options = [command.arguments objectAtIndex:0];
@@ -1003,6 +1007,11 @@
     }
     if (!result) {
         result = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageToErrorObject:CAPTURE_INTERNAL_ERR];
+    }
+    if (self.librarySource == YES) //no need to compile a preview, send back URL to PG
+    {
+        self.moviePath = [[info objectForKey:UIImagePickerControllerMediaURL] path];
+        [self imagePickerControllerPreviewUse:NULL];
     }
     if (self.pauseRecord == NO)
     {

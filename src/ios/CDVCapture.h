@@ -53,6 +53,7 @@ typedef NSUInteger CDVCaptureError;
 }
 @property BOOL inUse;
 @property BOOL pauseRecord;
+@property BOOL librarySource;
 @property (strong, nonatomic) NSMutableArray *assetArray;
 @property (strong, nonatomic) UIView *overlayView;
 @property (strong, nonatomic) UIView *previewView;
