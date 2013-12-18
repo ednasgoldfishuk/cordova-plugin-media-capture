@@ -288,6 +288,41 @@
 }
 
 - (void)stopCapture:(id)sender {
+    
+    if (self.pauseRecord == NO) //if the user has not stopped the video before pressing the tick, stop the record
+    {
+        //self.pauseRecord = YES;
+        
+        self.btnCapture.alpha = 1.0;
+        self.btnCapturePause.alpha = 0.0;
+        
+        NSDate *currentDate = [NSDate date];
+        NSTimeInterval timeInterval = [currentDate timeIntervalSinceDate:self.startDate];
+        NSDate *timerDate = [NSDate dateWithTimeIntervalSince1970:timeInterval];
+        
+        // Create a date formatter
+        NSDateFormatter *dateFormatter = [[NSDateFormatter alloc] init];
+        [dateFormatter setDateFormat:@"sss"];
+        [dateFormatter setTimeZone:[NSTimeZone timeZoneForSecondsFromGMT:0.0]];
+        
+        // Format the elapsed time and set it to the label
+        NSString *timeString = [dateFormatter stringFromDate:timerDate];
+        
+        NSNumber *timerInt = [NSNumber numberWithInteger:[timeString integerValue]];
+        self.pauseRecordTime = [NSNumber numberWithInteger:[self.pauseRecordTime intValue] + [timerInt intValue]];
+        NSLog([NSString stringWithFormat:@"%d",[self.pauseRecordTime intValue]]);
+        
+        [self animateBlinkerStop];
+        
+        [self.stopWatchTimer invalidate];
+        self.stopWatchTimer = nil;
+        
+        [pickerController stopVideoCapture];
+        
+        return;
+    }
+    
+    
     NSMutableArray *layerInstructions = [[NSMutableArray alloc] init];
     
     self.alertSpinner = [[UIAlertView alloc] initWithTitle:@"Working" message:@"Saving video"  delegate:nil cancelButtonTitle:nil otherButtonTitles: nil, nil];
@@ -445,11 +480,71 @@
     //[ActivityView stopAnimating];
 }
 
+- (void)alertView:(UIAlertView *)alertView clickedButtonAtIndex:(NSInteger)buttonIndex
+{
+    if (alertView.tag == 1)
+    {
+        if (buttonIndex == 0)
+        {
+            [self.stopWatchTimer invalidate];
+            self.stopWatchTimer = nil;
+            
+            [pickerController dismissViewControllerAnimated:YES completion:NULL];
+        }
+        else if (buttonIndex == 1)
+        {
+            // No
+        }
+    }
+    else if (alertView.tag == 2)
+    {
+        if (buttonIndex == 0)
+        {
+            [self.movieController.view removeFromSuperview];
+            self.movieController = nil;
+            
+            //reset the timer for the recording
+            [self.stopWatchTimer invalidate];
+            self.stopWatchTimer = nil;
+            self.stopwatchLabel.text = @"00:00";
+            
+            //stop the button blinking
+            [self.imageBlinkView.layer removeAllAnimations];
+            [self.imageBlinkView setAlpha:1];
+            
+            [self.previewView removeFromSuperview];
+            
+            //discard the camera view
+            NSString* callbackId = pickerController.callbackId;
+            
+            if ([pickerController respondsToSelector:@selector(presentingViewController)]) {
+                [[pickerController presentingViewController] dismissModalViewControllerAnimated:YES];
+            } else {
+                [[pickerController parentViewController] dismissModalViewControllerAnimated:YES];
+            }
+            
+            CDVPluginResult* result = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageToErrorObject:CAPTURE_NO_MEDIA_FILES];
+            [self.commandDelegate sendPluginResult:result callbackId:callbackId];
+            pickerController = nil;
+        }
+        else if (buttonIndex == 1)
+        {
+            // No
+        }
+    }
+}
+
 - (void)cancelCapture:(id)sender {
-    [self.stopWatchTimer invalidate];
-    self.stopWatchTimer = nil;
     
-    [pickerController dismissViewControllerAnimated:YES completion:NULL];
+    UIAlertView *alert = [[UIAlertView alloc] init];
+    alert.tag = 1;
+    [alert setTitle:@"Discard"];
+    [alert setMessage:@"Are you sure you wish to discard your video?"];
+    [alert setDelegate:self];
+    [alert addButtonWithTitle:@"Yes"];
+    [alert addButtonWithTitle:@"No"];
+    [alert show];
+    
 }
 
 - (void)flashOnCapture:(id)sender {
@@ -909,6 +1004,11 @@
     if (!result) {
         result = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageToErrorObject:CAPTURE_INTERNAL_ERR];
     }
+    if (self.pauseRecord == NO)
+    {
+        self.pauseRecord = YES;
+        [self stopCapture:nil];
+    }
 
 }
 
@@ -939,32 +1039,14 @@
 
 -(void)imagePickerControllerPreviewRetake:(UIImagePickerController*)picker
 {
-    [self.movieController.view removeFromSuperview];
-    self.movieController = nil;
-    
-    //reset the timer for the recording
-    [self.stopWatchTimer invalidate];
-    self.stopWatchTimer = nil;
-    self.stopwatchLabel.text = @"00:00";
-    
-    //stop the button blinking
-    [self.imageBlinkView.layer removeAllAnimations];
-    [self.imageBlinkView setAlpha:1];
-    
-    [self.previewView removeFromSuperview];
-    
-    //discard the camera view
-    NSString* callbackId = pickerController.callbackId;
-    
-    if ([pickerController respondsToSelector:@selector(presentingViewController)]) {
-        [[pickerController presentingViewController] dismissModalViewControllerAnimated:YES];
-    } else {
-        [[pickerController parentViewController] dismissModalViewControllerAnimated:YES];
-    }
-    
-    CDVPluginResult* result = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageToErrorObject:CAPTURE_NO_MEDIA_FILES];
-    [self.commandDelegate sendPluginResult:result callbackId:callbackId];
-    pickerController = nil;
+    UIAlertView *alert = [[UIAlertView alloc] init];
+    alert.tag = 2;
+    [alert setTitle:@"Discard"];
+    [alert setMessage:@"Are you sure you wish to discard your video?"];
+    [alert setDelegate:self];
+    [alert addButtonWithTitle:@"Yes"];
+    [alert addButtonWithTitle:@"No"];
+    [alert show];
 }
 
 - (void)imagePickerControllerDidCancel:(UIImagePickerController*)picker
