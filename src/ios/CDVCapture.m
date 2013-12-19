@@ -489,6 +489,8 @@
             [self.stopWatchTimer invalidate];
             self.stopWatchTimer = nil;
             
+            self.assetArray = nil;
+            
             [pickerController dismissViewControllerAnimated:YES completion:NULL];
         }
         else if (buttonIndex == 1)
@@ -713,6 +715,7 @@
         UIImage *imageCancel =[UIImage imageNamed:@"VideoCancel.png"];
         [btnCancelVideo setImage:imageCancel forState:UIControlStateNormal];
         [btnCancelVideo addTarget:self action:@selector(cancelCapture:) forControlEvents:UIControlEventTouchUpInside];
+        //[btnCancelVideo addTarget:self action:@selector(cancelCapture:) forControlEvents:UIControlEventTouchUpInside];
         
         self.btnCapture = [UIButton buttonWithType:UIButtonTypeCustom];
         [self.btnCapture setFrame:CGRectMake(self.overlayView.frame.origin.x + (self.overlayView.frame.size.width/2) - (100 / 2), self.overlayView.frame.origin.y + self.overlayView.frame.size.height - 110, 100, 100)];
