@@ -360,9 +360,9 @@
         if(firstTransform.a == 0 && firstTransform.b == -1.0 && firstTransform.c == 1.0 && firstTransform.d == 0)  {assetOrientation_ =  UIImageOrientationLeft; isFirstAssetPortrait_ = YES;}
         if(firstTransform.a == 1.0 && firstTransform.b == 0 && firstTransform.c == 0 && firstTransform.d == 1.0)   {assetOrientation_ =  UIImageOrientationUp;}
         if(firstTransform.a == -1.0 && firstTransform.b == 0 && firstTransform.c == 0 && firstTransform.d == -1.0) {assetOrientation_ = UIImageOrientationDown;}
-        CGFloat FirstAssetScaleToFitRatio = 320.0/assetTrack.naturalSize.width;
+        CGFloat FirstAssetScaleToFitRatio = 480.0/assetTrack.naturalSize.width;
         if(isFirstAssetPortrait_){
-            FirstAssetScaleToFitRatio = 320.0/assetTrack.naturalSize.height;
+            FirstAssetScaleToFitRatio = 480.0/assetTrack.naturalSize.height;
             CGAffineTransform FirstAssetScaleFactor = CGAffineTransformMakeScale(FirstAssetScaleToFitRatio,FirstAssetScaleToFitRatio);
             [layerInstruction setTransform:CGAffineTransformConcat(assetTrack.preferredTransform, FirstAssetScaleFactor) atTime:kCMTimeZero];
         }else{
@@ -382,7 +382,7 @@
     AVMutableVideoComposition *MainCompositionInst = [AVMutableVideoComposition videoComposition];
     MainCompositionInst.instructions = [NSArray arrayWithObject:MainInstruction];
     MainCompositionInst.frameDuration = CMTimeMake(1, 30);
-    MainCompositionInst.renderSize = CGSizeMake(320.0, 480.0);
+    MainCompositionInst.renderSize = CGSizeMake(480.0, 640.0);
     
     NSArray *paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
     NSString *documentsDirectory = [paths objectAtIndex:0];
@@ -445,10 +445,10 @@
 
                                                      NSURL*theurl=assetURL;
                                                      
-                                                     self.movieController = [[MPMoviePlayerController alloc] init];
-                                                     
+                                                     self.movieController = [[MPMoviePlayerController alloc] init];                                            
+                                                    
                                                      [self.movieController setContentURL:assetURL];
-                                                     [self.movieController.view setFrame:CGRectMake (0, 0, 320, 476)];
+                                                     [self.movieController.view setFrame:CGRectMake (0, 0, [UIScreen mainScreen].bounds.size.width, [UIScreen mainScreen].bounds.size.height)];
                                                      
                                                      UIButton *btnCancelVideo = [UIButton buttonWithType:UIButtonTypeCustom];
                                                      [btnCancelVideo setFrame:CGRectMake(10, self.overlayView.frame.origin.y+10, 50, 50)];
