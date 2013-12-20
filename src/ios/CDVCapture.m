@@ -369,7 +369,7 @@
     
     NSURL *url = [NSURL fileURLWithPath:myPathDocs];
     
-    AVAssetExportSession *exporter = [[AVAssetExportSession alloc] initWithAsset:mixComposition presetName:AVAssetExportPresetHighestQuality];
+    AVAssetExportSession *exporter = [[AVAssetExportSession alloc] initWithAsset:mixComposition presetName:AVAssetExportPresetMediumQuality];
     exporter.outputURL=url;
     exporter.outputFileType = AVFileTypeQuickTimeMovie;
     exporter.videoComposition = MainCompositionInst;
