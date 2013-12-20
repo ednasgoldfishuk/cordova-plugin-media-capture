@@ -254,14 +254,8 @@
         NSDate *currentDate = [NSDate date];
         NSTimeInterval timeInterval = [currentDate timeIntervalSinceDate:self.startDate];
         NSDate *timerDate = [NSDate dateWithTimeIntervalSince1970:timeInterval];
-        
-        // Create a date formatter
-        NSDateFormatter *dateFormatter = [[NSDateFormatter alloc] init];
-        [dateFormatter setDateFormat:@"sss"];
-        [dateFormatter setTimeZone:[NSTimeZone timeZoneForSecondsFromGMT:0.0]];
-        
-        // Format the elapsed time and set it to the label
-        NSString *timeString = [dateFormatter stringFromDate:timerDate];
+
+        NSString *timeString = [NSString stringWithFormat:@"%.0f", [timerDate timeIntervalSince1970]];
         
         NSNumber *timerInt = [NSNumber numberWithInteger:[timeString integerValue]];
         self.pauseRecordTime = [NSNumber numberWithInteger:[self.pauseRecordTime intValue] + [timerInt intValue]];
@@ -278,15 +272,6 @@
     
 }
 
-- (NSString *)timeFormatted:(int)totalSeconds
-{
-    
-    int seconds = totalSeconds % 60;
-    int minutes = (totalSeconds / 60) % 60;
-    
-    return [NSString stringWithFormat:@"%02d:%02d", minutes, seconds];
-}
-
 - (void)stopCapture:(id)sender {
     
     if (self.pauseRecord == NO) //if the user has not stopped the video before pressing the tick, stop the record
@@ -300,13 +285,7 @@
         NSTimeInterval timeInterval = [currentDate timeIntervalSinceDate:self.startDate];
         NSDate *timerDate = [NSDate dateWithTimeIntervalSince1970:timeInterval];
         
-        // Create a date formatter
-        NSDateFormatter *dateFormatter = [[NSDateFormatter alloc] init];
-        [dateFormatter setDateFormat:@"sss"];
-        [dateFormatter setTimeZone:[NSTimeZone timeZoneForSecondsFromGMT:0.0]];
-        
-        // Format the elapsed time and set it to the label
-        NSString *timeString = [dateFormatter stringFromDate:timerDate];
+        NSString *timeString = [NSString stringWithFormat:@"%.0f", [timerDate timeIntervalSince1970]];
         
         NSNumber *timerInt = [NSNumber numberWithInteger:[timeString integerValue]];
         self.pauseRecordTime = [NSNumber numberWithInteger:[self.pauseRecordTime intValue] + [timerInt intValue]];
@@ -593,17 +572,16 @@
     NSTimeInterval timeInterval = [currentDate timeIntervalSinceDate:self.startDate];
     NSDate *timerDate = [NSDate dateWithTimeIntervalSince1970:timeInterval];
     
-    // Create a date formatter
-    NSDateFormatter *dateFormatter = [[NSDateFormatter alloc] init];
-    [dateFormatter setDateFormat:@"sss"];
-    [dateFormatter setTimeZone:[NSTimeZone timeZoneForSecondsFromGMT:0.0]];
-    
     // Format the elapsed time and set it to the label
-    NSString *timeString = [dateFormatter stringFromDate:timerDate];
+    NSString *timeString = [NSString stringWithFormat:@"%.0f", [timerDate timeIntervalSince1970]];
     NSNumber *timeNumber;
     
     timeNumber = [NSNumber numberWithInteger:[timeString intValue] + [self.pauseRecordTime intValue]];
-    self.stopwatchLabel.text = [self timeFormatted:[timeNumber intValue]];
+    
+    int seconds = [timeNumber intValue] % 60;
+    int minutes = ([timeNumber intValue] / 60) % 60;
+    
+    self.stopwatchLabel.text = [NSString stringWithFormat:@"%02d:%02d", minutes, seconds];
     
 }
 
