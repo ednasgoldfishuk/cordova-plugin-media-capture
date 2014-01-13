@@ -656,8 +656,8 @@
         [pickerController setShowsCameraControls:NO];
         [pickerController setToolbarHidden:YES];
         [pickerController setDelegate:self];
-        CGAffineTransform cameraTransform = CGAffineTransformMakeScale(1.23, 1.23);
-        pickerController.cameraViewTransform = cameraTransform;
+        //CGAffineTransform cameraTransform = CGAffineTransformMakeScale(1.23, 1.23);
+        //pickerController.cameraViewTransform = cameraTransform;
         
         self.overlayView = [[UIView alloc] initWithFrame:[[pickerController view]frame]];
         [self.overlayView setBackgroundColor:[UIColor clearColor]];
