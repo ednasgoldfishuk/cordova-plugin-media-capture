@@ -581,7 +581,12 @@
     int seconds = [timeNumber intValue] % 60;
     int minutes = ([timeNumber intValue] / 60) % 60;
     
-    self.stopwatchLabel.text = [NSString stringWithFormat:@"%02d:%02d", minutes, seconds];
+    int maximumRecordTime = (int)pickerController.videoMaximumDuration;
+    
+    if ([timeNumber intValue] <= maximumRecordTime) //stop the timer when the maximum time is reached
+    {
+        self.stopwatchLabel.text = [NSString stringWithFormat:@"%02d:%02d", minutes, seconds];
+    }
     
 }
 
